@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>VPN</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root { --bg:#141414; --card:#1e1e1e; --text:#fff; --hint:#8a8f98; --accent:#4da3ff; --warn:#ffb020; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,Segoe UI,Roboto,sans-serif; padding:12px 14px 90px; }
+  .top { display:flex; justify-content:space-between; margin-bottom:12px; }
+  .pill { background:var(--card); border-radius:20px; padding:6px 12px; font-size:13px; }
+  .banner { border-radius:16px; padding:14px; display:flex; justify-content:space-between; align-items:center; gap:10px; background:#4da3ff; color:#fff; }
+  .banner.expired { background:#3d8bf0; }
+  .banner b { font-size:16px; display:block; } .banner span { font-size:12px; opacity:.8; }
+  .banner button { background:rgba(255,255,255,.25); border:0; color:#fff; padding:8px 14px; border-radius:16px; font-weight:600; }
+  .logo { width:84px; height:84px; margin:26px auto 12px; border-radius:50%; background:#2b6fb5; display:flex; align-items:center; justify-content:center; font-size:40px; }
+  h1 { text-align:center; margin:6px 0; font-size:24px; }
+  p.sub { text-align:center; color:var(--hint); margin:0 20px 22px; }
+  .label { display:flex; justify-content:space-between; color:var(--hint); font-size:12px; text-transform:uppercase; margin:14px 4px 6px; }
+  .label a { color:var(--accent); }
+  .card { background:var(--card); border-radius:18px; padding:12px; }
+  .link { background:#141414; border-radius:12px; padding:14px; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .row { display:flex; justify-content:space-between; margin-top:12px; font-weight:600; }
+  .row small { display:block; color:var(--accent); font-weight:400; margin-top:2px; }
+  .btn { position:fixed; left:14px; right:14px; bottom:calc(14px + env(safe-area-inset-bottom,0px)); background:var(--accent); color:#fff; border:0; border-radius:22px; padding:15px; font-size:16px; font-weight:600; }
+  .tabs { display:flex; gap:8px; margin:6px 0 12px; }
+  .tab { flex:1; text-align:center; padding:14px; border-radius:18px; background:var(--card); border:1px solid transparent; }
+  .tab.on { border-color:var(--accent); color:var(--accent); }
+  .step { display:flex; gap:10px; padding:10px 2px; } .step b { color:var(--accent); display:block; } .step span { color:var(--hint); font-size:13px; }
+  .hide { display:none; }
+</style>
+</head>
+<body>
+<div id="home">
+  <div class="top"><div class="pill" id="user">•</div><div class="pill"><span id="bal">0</span> ₽ +</div></div>
+  <div class="banner" id="banner"><div><b id="bt">Загрузка…</b><span id="bs"></span></div><button onclick="Telegram.WebApp.close()">Продлить</button></div>
+  <div class="logo">🌐</div>
+  <h1 id="brand">VPN</h1>
+  <p class="sub">Стабильный и надёжный сервис для ускорения Интернета.</p>
+  <div class="label"><span>Тариф</span><a onclick="load()">Обновить</a></div>
+  <div class="card">
+    <div class="link" id="link">…</div>
+    <div class="row"><div><span id="days">–</span><small id="dev">– устройств</small></div><div style="text-align:right">До <span id="until">–</span><small id="st"></small></div></div>
+  </div>
+  <button class="btn" onclick="show('setup')">Установить VPN</button>
+</div>
+
+<div id="setup" class="hide">
+  <div class="logo">🌐</div>
+  <h1>Настройка VPN</h1>
+  <p class="sub">Выберите устройство, которое хотите подключить.</p>
+  <div class="label"><span>Выберите приложение</span><a id="plat">WINDOWS</a></div>
+  <div class="tabs"><div class="tab on" onclick="pick(this)">V2RayTun</div><div class="tab" onclick="pick(this)">Happ</div></div>
+  <div class="card"><div class="link" id="link2">…</div></div>
+  <div class="card" style="margin-top:12px">
+    <div class="step"><div>⬇️</div><div><b>1. Установите приложение</b><span>Установите приложение на устройство.</span></div></div>
+    <div class="step"><div>📋</div><div><b>2. Скопируйте ссылку</b><span>Нажмите на ссылку выше, чтобы скопировать.</span></div></div>
+    <div class="step"><div>✅</div><div><b>3. Добавьте подписку</b><span>Вставьте ссылку в приложении. (заглушка)</span></div></div>
+  </div>
+  <button class="btn" onclick="show('home')">Вернуться назад</button>
+</div>
+
+<script>
+const tg = Telegram.WebApp; tg.ready(); tg.expand();
+const $ = id => document.getElementById(id);
+let sublink = '';
+function show(id){ $('home').classList.toggle('hide', id!=='home'); $('setup').classList.toggle('hide', id!=='setup'); window.scrollTo(0,0); }
+function pick(el){ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on')); el.classList.add('on'); }
+function copy(){ navigator.clipboard && navigator.clipboard.writeText(sublink); tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success'); }
+$('link').onclick = copy; $('link2').onclick = copy;
+const ua = navigator.userAgent;
+$('plat').textContent = /Android/i.test(ua) ? 'ANDROID' : /iPhone|iPad/i.test(ua) ? 'IOS' : /Mac/i.test(ua) ? 'MACOS' : /Linux/i.test(ua) ? 'LINUX' : 'WINDOWS';
+const u = tg.initDataUnsafe && tg.initDataUnsafe.user;
+if (u) $('user').textContent = u.username || u.first_name;
+
+async function load(){
+  try {
+    const r = await fetch('/api/me', { headers: { 'X-Init-Data': tg.initData } });
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    sublink = d.link;
+    $('brand').textContent = d.brand; document.title = d.brand;
+    $('bal').textContent = d.balance;
+    $('link').textContent = d.link; $('link2').textContent = d.link;
+    $('days').textContent = d.days + ' дн.';
+    $('dev').textContent = d.devices + ' устройств';
+    $('until').textContent = d.until;
+    $('st').textContent = d.active ? 'подписка активна' : 'подписка истекла';
+    $('bt').textContent = d.active ? 'Подписка активна' : 'Продлите VPN';
+    $('bs').textContent = d.active ? 'Все работает стабильно' : 'Подписка истекла';
+    $('banner').classList.toggle('expired', !d.active);
+  } catch(e) { $('bt').textContent = 'Откройте через Telegram'; $('bs').textContent = 'Не удалось получить данные'; }
+}
+load();
+</script>
+</body>
+</html>
